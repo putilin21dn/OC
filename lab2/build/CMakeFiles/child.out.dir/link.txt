@@ -1,0 +1,1 @@
+/usr/bin/cc    CMakeFiles/child.out.dir/home/dmitry/Рабочий_стол/OC/lab2/src/child.c.o  -o child.out 

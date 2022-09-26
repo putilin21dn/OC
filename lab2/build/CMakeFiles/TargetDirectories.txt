@@ -1,0 +1,4 @@
+/home/dmitry/Рабочий стол/OC/lab2/build/CMakeFiles/rebuild_cache.dir
+/home/dmitry/Рабочий стол/OC/lab2/build/CMakeFiles/edit_cache.dir
+/home/dmitry/Рабочий стол/OC/lab2/build/CMakeFiles/child.out.dir
+/home/dmitry/Рабочий стол/OC/lab2/build/CMakeFiles/parent.out.dir

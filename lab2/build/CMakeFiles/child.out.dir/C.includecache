@@ -1,0 +1,18 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/dmitry/Рабочий стол/OC/lab2/src/child.c
+unistd.h
+/home/dmitry/Рабочий стол/OC/lab2/src/unistd.h
+stdio.h
+/home/dmitry/Рабочий стол/OC/lab2/src/stdio.h
+stdlib.h
+/home/dmitry/Рабочий стол/OC/lab2/src/stdlib.h
+string.h
+/home/dmitry/Рабочий стол/OC/lab2/src/string.h
+
