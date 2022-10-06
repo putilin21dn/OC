@@ -17,13 +17,15 @@ int main(){
     
     int pid1 = fork();
     
+
+
     if(pid1==-1){
         printf("FORK ERROR!\n");
         return -1;
     }
 
     if(pid1==0){
-            // CHILD
+            // CHILD1
             
             //printf("%d %d %d %d %d %d\n", fd[0],fd[1], fd1[0],fd1[1], fd2[0],fd2[1]);
             
@@ -42,7 +44,7 @@ int main(){
             execl("child.out", str10.c_str(),str11.c_str(),str20.c_str(),str21.c_str(), str0.c_str(), str1.c_str(), NULL);
             
         }
-
+    
     else if(pid1>0){
         
             // PARENT

@@ -1,1 +1,0 @@
-/usr/bin/c++     CMakeFiles/parent.out.dir/home/dmitry/Рабочий_стол/OC/lab2/src/parent.cpp.o  -o parent.out 
