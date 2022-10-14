@@ -128,6 +128,12 @@ int main(int argc,char* argv[]){
         }
     }
 
+    for(int i = 0; i < max_thread; i++) { 
+            swap(data[i].mas1,data[i].res1);
+            swap(data[i].mas2,data[i].res2);
+        }
+
+
     cout << "Filtr narashivania \n";
     for(int i=0; i<N; ++i){
         for(int j=0;j<N;++j){
