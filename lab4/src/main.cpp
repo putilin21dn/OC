@@ -47,8 +47,8 @@ int main(){
     
     CHECK_ERROR(lseek(file1, SIZE - 1, SEEK_SET), "lseek error");
     write(file1, &zero, 1);
-    sem_t* sem1 = sem_open("!semaphore1", O_CREAT, S_IRUSR | S_IWUSR, 0);
-    sem_t* sem2 = sem_open("!semaphore2", O_CREAT, S_IRUSR | S_IWUSR, 0);
+    sem_t* sem1 = sem_open("semaphore1", O_CREAT, S_IRUSR | S_IWUSR, 0);
+    sem_t* sem2 = sem_open("semaphore2", O_CREAT, S_IRUSR | S_IWUSR, 0);
     if (sem1 == SEM_FAILED || sem2 == SEM_FAILED )
     {
         perror("sem_open error");
@@ -85,27 +85,18 @@ int main(){
         out[0]=0;
         for(int i=1; i<str[0]+1;++i){
             out[0]++;
-            //printf("str[%d] = %c", i,str[i]);
-            // out = (char*)realloc(out, (out[0]+2)*sizeof(char)); 
             if(str[i]>='A' & str[i]<='Z'){
                 out[out[0]] = str[i] - 'A' + 'a';
-                //printf("%c",out[out[0]]);
-                //printf("%c\n",out[out[0]]);
-                // out[out[0]] = '$';
             }
             else{
                 out[out[0]] = str[i];
-                //printf("%c\n",out[out[0]]);
             }
             if(str[i]==' '){
                 out[out[0]] = '_';
-                //printf("%c\n",out[out[0]]);
-            }
-            
-           
+            }  
         }
-
     out[0]++;
+    
     memcpy(in, out, MAX_LENGTH*sizeof(char));
     CHECK_ERROR(sem_post(sem2), "sem_post error");
 
@@ -133,8 +124,7 @@ int main(){
             in[in[0]] = c;
         }
         in[in[0]] = '\0'; 
-        int value=10;
-        
+
         memcpy(out, in, MAX_LENGTH*sizeof(char));
         CHECK_ERROR(sem_post(sem1), "sem_post error");
         CHECK_ERROR(sem_wait(sem2), "sem_wait error");
@@ -153,10 +143,8 @@ int main(){
         printf("\n");
         free(in);
         free(str);
-        
     }
 
-    
     CHECK_ERROR(close(file1), "close error");
     unlink("file1");
 
