@@ -122,17 +122,13 @@ int main(int argc,char* argv[]){
         }
 
         //swap
-        for(int i = 0; i < max_thread; i++) { 
-            swap(data[i].mas1,data[i].res1);
-            swap(data[i].mas2,data[i].res2);
-        }
+        swap(data[0].mas1,data[0].res1);
+        swap(data[0].mas2,data[0].res2);
+        
     }
 
-    for(int i = 0; i < max_thread; i++) { 
-            swap(data[i].mas1,data[i].res1);
-            swap(data[i].mas2,data[i].res2);
-        }
-
+    swap(data[0].mas1,data[0].res1);
+    swap(data[0].mas2,data[0].res2);
 
     cout << "Filtr narashivania \n";
     for(int i=0; i<N; ++i){

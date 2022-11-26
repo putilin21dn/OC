@@ -70,7 +70,7 @@ int main(){
             return -1;
         }
         
-        char* str = (char *)calloc(MAX_LENGTH, sizeof(char));
+        char* str = (char *)malloc(MAX_LENGTH*sizeof(char));
         char* out = (char *)malloc(sizeof(char)*MAX_LENGTH);
 
         if (str == NULL)
@@ -96,7 +96,7 @@ int main(){
             }  
         }
     out[0]++;
-    
+    printf("%p\n",in);
     memcpy(in, out, MAX_LENGTH*sizeof(char));
     CHECK_ERROR(sem_post(sem2), "sem_post error");
 
@@ -115,7 +115,7 @@ int main(){
             perror("mmap error");
             return -1;
         }
-
+        
         char *in = (char *)malloc(sizeof(char)*MAX_LENGTH);
         in[0] = 0;
         char c;
@@ -125,12 +125,14 @@ int main(){
         }
         in[in[0]] = '\0'; 
 
+        printf("%p\n",out);
+
         memcpy(out, in, MAX_LENGTH*sizeof(char));
         CHECK_ERROR(sem_post(sem1), "sem_post error");
         CHECK_ERROR(sem_wait(sem2), "sem_wait error");
 
         
-        char* str = (char *)calloc(MAX_LENGTH, sizeof(char));
+        char* str = (char *)malloc(MAX_LENGTH*sizeof(char));
         memcpy(str, out, sizeof(char)*MAX_LENGTH);
 
         for (int i=1; i<str[0]+1;++i){
