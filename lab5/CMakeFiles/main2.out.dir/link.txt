@@ -1,0 +1,1 @@
+/usr/bin/cc CMakeFiles/main2.out.dir/src/main.c.o -o main2.out  -Wl,-rpath,"/home/dmitry/Рабочий стол/OC/lab5" libdyn2.so 
