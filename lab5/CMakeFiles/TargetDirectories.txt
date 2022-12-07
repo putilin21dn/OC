@@ -1,7 +1,0 @@
-/home/dmitry/Рабочий стол/OC/lab5/CMakeFiles/dyn1.dir
-/home/dmitry/Рабочий стол/OC/lab5/CMakeFiles/dyn2.dir
-/home/dmitry/Рабочий стол/OC/lab5/CMakeFiles/main1.out.dir
-/home/dmitry/Рабочий стол/OC/lab5/CMakeFiles/main2.out.dir
-/home/dmitry/Рабочий стол/OC/lab5/CMakeFiles/main_dyn.out.dir
-/home/dmitry/Рабочий стол/OC/lab5/CMakeFiles/edit_cache.dir
-/home/dmitry/Рабочий стол/OC/lab5/CMakeFiles/rebuild_cache.dir

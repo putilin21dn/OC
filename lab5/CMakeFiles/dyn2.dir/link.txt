@@ -1,1 +1,0 @@
-/usr/bin/cc -fPIC -shared -Wl,-soname,libdyn2.so -o libdyn2.so CMakeFiles/dyn2.dir/src/realisation2.c.o 

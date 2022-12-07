@@ -1,1 +1,0 @@
-/usr/bin/cc CMakeFiles/main_dyn.out.dir/src/main_dyn.c.o -o main_dyn.out  -ldl 
