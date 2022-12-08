@@ -1,12 +1,6 @@
 #include <stdio.h>
 #include <dlfcn.h>
 
-#ifdef SYSTEM
-    #define PRINT_OS printf("Operation system: %s\n", SYSTEM)
-#else
-    #define PRINT_OS
-#endif
-
 #define CHECK_ERROR(expr, message) \
     do \
     { \
@@ -18,6 +12,12 @@
         } \
     } while (0)
 
+#define check(VALUE, OKVAL, MSG) \
+    if (VALUE != OKVAL) { \
+        printf("%s", MSG); \
+        return 1; \
+    } \
+
 
 const int N = 2;
 const char* names[] = {"./libdyn1.so", "./libdyn2.so"};
@@ -26,10 +26,12 @@ int main()
 {
     int n = 0;
     void* handle;
-    float(*SinIntegral)(float,float,float); int(*Square)(float,float);
+    float(*SinIntegral)(float,float,float); float(*Square)(float,float);
+    handle = dlopen(names[n], RTLD_LAZY);
     CHECK_ERROR(handle = dlopen(names[n], RTLD_LAZY), "dlopen error");
-    CHECK_ERROR(SinIntegral = dlsym(handle, "SinIntegral"), "dlsym error (SinIntegral)");
-    CHECK_ERROR(Square = dlsym(handle, "Square"), "dlsym error (Square)");
+    SinIntegral = dlsym(handle, "_Z11SinIntegralfff");
+    CHECK_ERROR(SinIntegral = dlsym(handle, "_Z11SinIntegralfff"), "dlsym error (SinIntegral)");
+    CHECK_ERROR(Square = dlsym(handle, "_Z6Squareff"), "dlsym error (Square)");
 
     while(1)
     {
@@ -38,30 +40,28 @@ int main()
         if (t == 0)
         {
             n = (n + 1) % N;
-            if (dlclose(handle) != 0)
-            {
-                perror("dlclose error");
-                return -1;
-            };
+            dlclose(handle);
             CHECK_ERROR(handle = dlopen(names[n], RTLD_LAZY), "dlopen error");
-            CHECK_ERROR(SinIntegral = dlsym(handle, "SinIntegral"), "dlsym error (E)");
-            CHECK_ERROR(Square = dlsym(handle, "Square"), "dlsym error (GCD)");
+            CHECK_ERROR(SinIntegral = dlsym(handle, "_Z11SinIntegralfff"), "dlsym error (SinIntegral)");
+            CHECK_ERROR(Square = dlsym(handle, "_Z6Squareff"), "dlsym error (Square)");
+            printf("Swap library!\n");
+
         }
         if (t == 1)
         {
-            float A,B;
-            scanf("%f %f", &A, &B);
-            PRINT_OS;
-            printf("Square: %d\n", (*Square)(A,B));
+            float A,B,e;
+            check(scanf("%f %f %f", &A, &B, &e), 3, "Error reading floats!\n");
+            printf("SinIntegral: %.10f\n", (*SinIntegral)(A,B,e));
+            
         }
         if (t == 2)
         {
-            float A,B,e;
-            scanf("%f %f %f", &A, &B, &e);
-            PRINT_OS;
-            printf("SinIntegral: %.10f\n", (*SinIntegral)(A,B,e));
+            float A,B;
+            check(scanf("%f %f", &A, &B), 2, "Error reading floats!\n");
+            printf("Square: %f\n", (*Square)(A,B));   
         }
         if (t == -1)
-            break;
+            printf("End.\n");
+            return 0;
     }
 }

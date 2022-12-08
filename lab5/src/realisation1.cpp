@@ -1,16 +1,16 @@
-#include "../include/realisation.h"
-#include <math.h>
+#include "realisation.h"
+#include <cmath>
 
-float f(float a){
-    return sinf(a);
-}
+// float f(float a){
+//     return sinf(a);
+// }
 
 float SinIntegral(float A, float B, float e){
     float n = (B-A)/e;
 
     float ans = 0.0;
     for(int i=1; i<=n; ++i){
-        ans += e*f(A + e*(i-0.5));
+        ans += e*sin(A + e*(i-0.5));
     }
     return ans;
 }

@@ -7,13 +7,30 @@
         return 1; \
     } \
 
-int main(int argc, const char** argv) {
+
+#define PRINT_ID printf("ID : %s\n", C_ID)
+
+#define PRINT_VERSION printf("VERSION : %s\n", C_VERSION)
+
+#define PRINT_TIME printf("TIME : %s\n", C_TIME)
+
+#define PRINT_DATE printf("DATE : %s\n", C_DATE)
+
+
+
+
+int main() {
     int q;
+    PRINT_ID;
+    PRINT_VERSION;
+    PRINT_TIME;
+    PRINT_DATE;
+
     while (scanf("%d", &q) > 0) {
         if (q == 1) {
             float A,B,e;
             check(scanf("%f%f%f", &A, &B, &e), 3, "Error reading floats!\n");
-            printf("SinIntegral(%f, %f, %f) = %f\n", A, B, e, SinIntegral(A,B,e));
+            printf("SinIntegral(%f, %f, %f) = %.10f\n", A, B, e, SinIntegral(A,B,e));
         } else if (q == 2) {
             float A, B;
             check(scanf("%f %f", &A, &B), 2, "Error reading floats!\n");
