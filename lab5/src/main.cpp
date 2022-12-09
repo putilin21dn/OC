@@ -1,5 +1,7 @@
 #include "../include/realisation.h"
 #include <stdio.h>
+#include <time.h>
+
 
 #define check(VALUE, OKVAL, MSG) \
     if (VALUE != OKVAL) { \
@@ -12,9 +14,7 @@
 
 #define PRINT_VERSION printf("VERSION : %s\n", C_VERSION)
 
-#define PRINT_TIME printf("TIME : %s\n", C_TIME)
-
-#define PRINT_DATE printf("DATE : %s\n", C_DATE)
+#define PRINT_DATE printf("DATE : %s\n", DATE)
 
 
 
@@ -23,8 +23,8 @@ int main() {
     int q;
     PRINT_ID;
     PRINT_VERSION;
-    PRINT_TIME;
     PRINT_DATE;
+
 
     while (scanf("%d", &q) > 0) {
         if (q == 1) {

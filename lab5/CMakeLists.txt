@@ -4,12 +4,13 @@ project(LR5)
 include_directories(include)
 
 
+string(TIMESTAMP BUILD_TIME "%Y-%m-%d  %H:%m:%s" UTC)
+
 
 
 add_compile_definitions(C_ID="${CMAKE_CXX_COMPILER_ID}")
 add_compile_definitions(C_VERSION="${CMAKE_CXX_COMPILER_VERSION}")
-add_compile_definitions(C_TIME="${CMAKE_GET_CURRENT_TIME}")
-add_compile_definitions(C_DATE="${CMAKE_GET_CURRENT_DATE}")
+add_compile_definitions(DATE="${BUILD_TIME}")
 
 
 
