@@ -27,15 +27,13 @@ zmq_msg_t vec2msg(vec V){
     void * z = zmq_msg_data(&msg);
     memcpy(z, &V.ex, sizeof(int));
     memcpy(z = z + sizeof(int), &V.id, sizeof(int));
-    cout << "TYT" << '\n';
     memcpy(z = z + sizeof(int), &V.lenstr, sizeof(int));
-    memcpy(z = z + sizeof(int), V.str.c_str(), V.lenstr);
-    memcpy(z = z + V.lenstr, &V.lensubstr, sizeof(int));
-    memcpy(z = z + sizeof(int), V.substr.c_str(), V.lensubstr);
+    memcpy(z = z + sizeof(int), V.str.c_str(), sizeof(char)*V.lenstr);
+    memcpy(z = z + sizeof(char)*V.lenstr, &V.lensubstr, sizeof(int));
+    memcpy(z = z + sizeof(int), V.substr.c_str(), sizeof(char)*V.lensubstr);
     return msg;
 
 }
-
 
 vec msg2vec(zmq_msg_t msg){
     void * z = zmq_msg_data(&msg);
@@ -44,12 +42,13 @@ vec msg2vec(zmq_msg_t msg){
     memcpy(&V.ex, z, sizeof(int));
     memcpy(&V.id, z=z+sizeof(int), sizeof(int));
     memcpy(&V.lenstr, z=z + sizeof(int), sizeof(int));
-    char *  s = (char *)malloc(sizeof(char)*V.lenstr);
+    char *  s = (char *)calloc(V.lenstr,sizeof(char));
     memcpy(s, z = z + sizeof(int) , V.lenstr);
     V.str = s;
     free(s);
-    memcpy(&V.lensubstr, z=z + V.lenstr, sizeof(int));
-    s = (char *)malloc(sizeof(char)*V.lensubstr);
+    memcpy(&V.lensubstr, z=z+V.lenstr, sizeof(int));
+    s = (char *)calloc(V.lensubstr,sizeof(char));
+    s = s + '\0';
     memcpy(s, z=z+sizeof(int) , V.lensubstr);
     V.substr = s;
     free(s);
@@ -57,5 +56,20 @@ vec msg2vec(zmq_msg_t msg){
 
 }
 
+zmq_msg_t str2msg(string str){
+    zmq_msg_t msg;
+    zmq_msg_init_size(&msg, str.length());
+    void * z = zmq_msg_data(&msg);
+    memcpy(z, str.c_str(), sizeof(char)*str.length());
+    return msg;
+}
+
+string msg2str(zmq_msg_t msg){
+    void * z = zmq_msg_data(&msg);
+    int len = zmq_msg_size(&msg);
+    char * s = (char *)calloc(len,sizeof(char));
+    memcpy(s,z,len*sizeof(char));
+    return s;   
+}
 
 #endif

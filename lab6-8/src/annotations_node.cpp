@@ -8,7 +8,8 @@
 #include <queue>
 #include <vector>
 #include "header.hpp"
-
+#include <ctime>
+#include <cstdlib>
 
 #define CHECK_ERROR(expr, stream, act) \
     do \
@@ -30,13 +31,14 @@
             std::cerr << stream; \
             act; \
         } \
-    } while (0)
+    } while (0) 
 
-const int MIN_PORT = 1024;
+
 
 using namespace std;
 
 string protocol = "tcp://localhost:";
+int MIN_PORT;
 
 void* async_node_thd(void*);
 
@@ -147,27 +149,16 @@ void* async_node_thd(void* ptr)
             case CREATE:
             {
                 zmq_msg_t msg;
-                V.str = "dasdas";
-                V.lenstr = V.str.length();
-                V.substr = "sada";
-                V.lensubstr = V.substr.length();
                 msg = vec2msg(V);
-                // cout << "TYT1" << '\n';
                 CHECK_ZMQ(zmq_msg_send(&msg, req, 0), "Error:" << node->id - MIN_PORT << ": Message error\n", break);
                 int pid;
-                // cout << "TYT2" << '\n';
-                cout << ping(node->id) << '\n';
-                
-                cout << "here3" << '\n';
                 CHECK_ZMQ(zmq_recv(req, &pid, sizeof(int), 0), "Error:" << node->id - MIN_PORT << ": Message error\n", break);
-                cout << "here4" << '\n';
-                // cout << V.id << " "<< node->id << '\n';
                 if (V.id < node->id)
                     node->L = new async_node(V.id);
                 else
                     node->R = new async_node(V.id);
                 cout << "Ok: " << pid << '\n';
-                // zmq_msg_close(&msg);
+                zmq_msg_close(&msg);
                 break;
             }
 
@@ -176,12 +167,19 @@ void* async_node_thd(void* ptr)
                 zmq_msg_t msg;
                 msg = vec2msg(V);
                 CHECK_ZMQ(zmq_msg_send(&msg, req, 0), "Error:" << node->id - MIN_PORT << ": Message error\n", break);
-                vector<int> ans;
-                CHECK_ZMQ(zmq_recv(req, &ans, sizeof(ans), 0), "Error:" << node->id - MIN_PORT << ": Message error\n", break);
+                string ans;
+                CHECK_ZMQ(zmq_msg_recv(&msg, req, 0), "Error:" << node->id - MIN_PORT << ": Message error\n", break);
                 cout << "Ok:" << node->id - MIN_PORT << ':';
-                for(auto x : ans ){
-                    cout << x << " ";
+                ans = msg2str(msg);
+
+                for(int i=0; i<ans.length();++i){
+                    if(ans[i]!='#')
+                        cout << ans[i];
+                    else{
+                        cout << " ";
+                    }
                 }
+
                 cout << '\n';
 
                 zmq_msg_close(&msg);
@@ -228,23 +226,15 @@ bool ping(int id)
     return event % 2;
 }
 
-void print(async_node* &ptr){
-    if (ptr!=nullptr){
-        if(ptr->L) print(ptr->L);
-        if(ptr->R) print(ptr->R);
-        cout << ptr->id << '\n';
-    }
-    else{
-        return;
-    }
-}
 
 
 async_node* tree = nullptr;
 
 int main()
 {
-     
+    srand( time(0) );
+    MIN_PORT = 1024 + rand()%1000;
+
     while (true)
     {
         string command;
@@ -299,11 +289,11 @@ int main()
             V.str = str;
             V.lensubstr = substr.length();
             V.substr = substr;
-            if (!ping(id))
-            {
-                cerr << "Error:" << id - MIN_PORT << ": Node is unavailable\n";
-                continue;
-            }
+            // if (!ping(id))
+            // {
+            //     cerr << "Error:" << id - MIN_PORT << ": Node is unavailable\n";
+            //     continue;
+            // }
             async_node* node = find_node_exec(tree, id);
             if (node != nullptr)
                 node->make_query(V);
@@ -340,39 +330,5 @@ int main()
             else
                 cerr << "Error: Not found\n";
         }
-
-        if (command == "pingall")
-        {
-            queue <async_node*> q;
-            vector<int> v;
-            if (tree != nullptr)
-                q.push(tree);
-            
-            while (!q.empty())
-            {
-                async_node* ptr = q.front();
-                cout << ptr->id << '\n';
-
-                q.pop();
-                if (ptr->L != nullptr)
-                    q.push(ptr->L);
-                if (ptr->R != nullptr)
-                    q.push(ptr->R);
-                bool check = ping(ptr->id);
-                if (!check)
-                    v.push_back(ptr->id - MIN_PORT);
-            }
-            if (v.empty())
-                v.push_back(-1);
-            cout << "Ok: ";
-            for (int i = 0; i < v.size(); i++)
-            {
-                if (i != 0)
-                    cout << ';';
-                cout << v[i];
-            }
-            cout << '\n';
-        }
-
     }
 }

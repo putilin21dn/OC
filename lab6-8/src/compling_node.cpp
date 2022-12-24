@@ -20,10 +20,10 @@
 
 using namespace std;
 
-vector<int> z_func(int lensubstr, string &s){
+string z_func(int lensubstr, string &s){
     int n = s.size();
     vector<int> z(n,0);
-    vector <int> ans;
+    string ans;
     int l=-1,r=-1;
     z[0]=n;
     for(int i=1;i<n;++i){
@@ -40,7 +40,7 @@ vector<int> z_func(int lensubstr, string &s){
     }
     for(int i=lensubstr; i<n;++i){
         if(z[i]==lensubstr){
-            ans.push_back(i-lensubstr-1);
+            ans += to_string(i-lensubstr-1) + "#";
         }
     }
     return ans;
@@ -54,9 +54,10 @@ int main(int argc, char* argv[])
     void *context = zmq_ctx_new();  
     void *responder = zmq_socket(context, ZMQ_REP);
     zmq_bind(responder, port.c_str());
-    string id_str = to_string(id);
+    
 
     cout << "HERE!" << '\n';
+    
     while (true) 
     {
         zmq_msg_t msg;
@@ -65,10 +66,16 @@ int main(int argc, char* argv[])
         CHECK_ERROR(zmq_msg_recv(&msg, responder, 0));
         // cout << "heresdfs" <<'\n';
         vec V = msg2vec(msg);
+        
+        
+        
+
+
         switch (V.ex)
         {
             case CREATE:
             {
+                string id_str = to_string(V.id);
                 // cout << "here2" << '\n';
                 int pid = fork();
                 // cout << "here 2" << pid <<'\n';
@@ -83,16 +90,13 @@ int main(int argc, char* argv[])
 
             case EXEC:
             {
-                cout << "here2" << '\n';
+                cout << "EXEC!" << '\n';
                 string s = V.substr + "#" + V.str;
-                vector <int> ans;
+                string ans;
                 ans = z_func(V.lensubstr,s);
-                for(auto x : ans){
-                    cout << x << " ";
-                }
-                cout << '\n';
-
-                zmq_send(responder,&ans,sizeof(ans),0);
+                
+                zmq_msg_t msg = str2msg(ans);
+                zmq_msg_send(&msg,responder,0);
                 break;
             }
 
