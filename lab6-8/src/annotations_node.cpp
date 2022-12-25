@@ -169,18 +169,20 @@ void* async_node_thd(void* ptr)
                 CHECK_ZMQ(zmq_msg_send(&msg, req, 0), "Error:" << node->id - MIN_PORT << ": Message error\n", break);
                 string ans;
                 CHECK_ZMQ(zmq_msg_recv(&msg, req, 0), "Error:" << node->id - MIN_PORT << ": Message error\n", break);
-                cout << "Ok:" << node->id - MIN_PORT << ':';
+                cout << "Ok: " << node->id - MIN_PORT << ": ";
                 ans = msg2str(msg);
 
                 for(int i=0; i<ans.length();++i){
                     if(ans[i]!='#')
                         cout << ans[i];
                     else{
-                        cout << " ";
+                        if(i==(ans.length()-1))
+                            cout << '\n';
+                        else{
+                            cout << "; ";
+                        }
                     }
                 }
-
-                cout << '\n';
 
                 zmq_msg_close(&msg);
                 break;
@@ -243,7 +245,6 @@ int main()
         {
             int id;
             cin >> id;
-            // cin >> str >> substr;
             id += MIN_PORT;
             vec V;
             V.ex = CREATE;
@@ -262,12 +263,11 @@ int main()
             {
                 async_node* node = find_node_create(tree, id);
                 if (node != nullptr){
-                    // if (!ping(node->id))
-                    // {
-                    //     cerr << "Error:" << id - MIN_PORT << ": Parent is unavailable\n";
-                    //     continue;
-                    // }
-                    cout << node->id << '\n';
+                    if (!ping(node->id))
+                    {
+                        cerr << "Error:" << id - MIN_PORT << ": Parent is unavailable\n";
+                        continue;
+                    }
                     node->make_query({CREATE, id});
                 }
                 else
@@ -289,11 +289,11 @@ int main()
             V.str = str;
             V.lensubstr = substr.length();
             V.substr = substr;
-            // if (!ping(id))
-            // {
-            //     cerr << "Error:" << id - MIN_PORT << ": Node is unavailable\n";
-            //     continue;
-            // }
+            if (!ping(id))
+            {
+                cerr << "Error:" << id - MIN_PORT << ": Node is unavailable\n";
+                continue;
+            }
             async_node* node = find_node_exec(tree, id);
             if (node != nullptr)
                 node->make_query(V);
@@ -311,19 +311,6 @@ int main()
                 cerr << "Error:" << id - MIN_PORT << ": Node is unavailable\n";
                 continue;
             }
-            bool state = destroy_node(tree, id);
-            if (state)
-                cout << "Ok\n";
-            else
-                cerr << "Error: Not found\n";
-        }
-
-        if (command == "unsafe_remove")
-        {
-            int id;
-            cin >> id;
-            id += MIN_PORT;
-            
             bool state = destroy_node(tree, id);
             if (state)
                 cout << "Ok\n";
