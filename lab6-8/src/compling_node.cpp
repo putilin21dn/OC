@@ -55,9 +55,6 @@ int main(int argc, char* argv[])
     void *responder = zmq_socket(context, ZMQ_REP);
     zmq_bind(responder, port.c_str());
     
-
-    cout << "HERE!" << '\n';
-    
     while (true) 
     {
         zmq_msg_t msg;
@@ -90,7 +87,6 @@ int main(int argc, char* argv[])
 
             case EXEC:
             {
-                cout << "EXEC!" << '\n';
                 string s = V.substr + "#" + V.str;
                 string ans;
                 ans = z_func(V.lensubstr,s);

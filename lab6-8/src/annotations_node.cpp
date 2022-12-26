@@ -39,8 +39,11 @@ using namespace std;
 
 string protocol = "tcp://localhost:";
 int MIN_PORT;
-
+vector<pair<int,bool>> act;
+int times;
+bool flag = true;
 void* async_node_thd(void*);
+
 
 
 struct async_node
@@ -53,6 +56,7 @@ struct async_node
     pthread_mutex_t mutex;
     pthread_t thd;
     queue <vec> q;
+    
 
 
 
@@ -96,7 +100,6 @@ async_node* find_node_create(async_node* ptr, int id)
 {
     if (ptr == nullptr)
         return nullptr;
-    // cout << ptr->id << " " << id << '\n';
     if (ptr->L == nullptr && ptr->id > id)
         return ptr;
     if (ptr->R == nullptr && ptr->id < id)
@@ -125,7 +128,7 @@ bool destroy_node(async_node*& ptr, int id)
     ptr = nullptr;
     return true;
 }
-bool ping(int);
+bool pings(int);
 
 void* async_node_thd(void* ptr)
 {
@@ -141,8 +144,6 @@ void* async_node_thd(void* ptr)
         vec V = node->q.front();
         node->q.pop();
         CHECK_ERROR(pthread_mutex_unlock(&node->mutex), "Error:" << node->id - MIN_PORT << ": Gateway mutex unlock error\n", node->active = false; break);
-
-        // cout << V.ex << " " << V.id << " " << V.str << " " << V.lenstr << '\n';
 
         switch (V.ex)
         {   
@@ -169,7 +170,7 @@ void* async_node_thd(void* ptr)
                 CHECK_ZMQ(zmq_msg_send(&msg, req, 0), "Error:" << node->id - MIN_PORT << ": Message error\n", break);
                 string ans;
                 CHECK_ZMQ(zmq_msg_recv(&msg, req, 0), "Error:" << node->id - MIN_PORT << ": Message error\n", break);
-                cout << "Ok: " << node->id - MIN_PORT << ": ";
+                cout << "Ok:" << node->id - MIN_PORT << ":";
                 ans = msg2str(msg);
 
                 for(int i=0; i<ans.length();++i){
@@ -179,7 +180,7 @@ void* async_node_thd(void* ptr)
                         if(i==(ans.length()-1))
                             cout << '\n';
                         else{
-                            cout << "; ";
+                            cout << ";";
                         }
                     }
                 }
@@ -202,35 +203,87 @@ void* async_node_thd(void* ptr)
     delete node;
     return NULL;
 }
+async_node* tree = nullptr;
 
-bool ping(int id)
+struct th{
+    async_node *tree;
+    int time;
+};
+
+
+
+
+bool pings(int id)
 {
-    string port = protocol + to_string(id);
-    string ping = "inproc://ping" + to_string(id);
-    void* context = zmq_ctx_new();
-    void *req = zmq_socket(context, ZMQ_REQ);
 
-    zmq_socket_monitor(req, ping.c_str(), ZMQ_EVENT_CONNECTED | ZMQ_EVENT_CONNECT_RETRIED);
-    void *soc = zmq_socket(context, ZMQ_PAIR);
-    zmq_connect(soc, ping.c_str());
-    zmq_connect(req, port.c_str());
+    
+        string port = protocol + to_string(id);
+        string ping = "inproc://ping" + to_string(id);
+        void* context = zmq_ctx_new();
+        void *req = zmq_socket(context, ZMQ_REQ);
 
-    zmq_msg_t msg;
-    zmq_msg_init(&msg);
-    zmq_msg_recv(&msg, soc, 0);
-    uint8_t* data = (uint8_t*)zmq_msg_data(&msg);
-    uint16_t event = *(uint16_t*)(data);
+        zmq_socket_monitor(req, ping.c_str(), ZMQ_EVENT_CONNECTED | ZMQ_EVENT_CONNECT_RETRIED);
+        void *soc = zmq_socket(context, ZMQ_PAIR);
+        zmq_connect(soc, ping.c_str());
+        zmq_connect(req, port.c_str());
 
-    zmq_close(req);
-    zmq_close(soc);
-    zmq_msg_close(&msg);
-    zmq_ctx_destroy(context);
-    return event % 2;
+        zmq_msg_t msg;
+        zmq_msg_init(&msg);
+        zmq_msg_recv(&msg, soc, 0);
+        uint8_t* data = (uint8_t*)zmq_msg_data(&msg);
+        uint16_t event = *(uint16_t*)(data);
+
+        zmq_close(req);
+        zmq_close(soc);
+        zmq_msg_close(&msg);
+        zmq_ctx_destroy(context);
+
+        return event % 2;
+}
+
+    
+void ping(int id)
+    {
+        for (auto x : act){
+            if(x.first == id){
+                cout << "Ok : 1" << '\n';
+                return;
+            }
+        }
+        cout << "Ok : -1" << '\n';
+        return;
+    }
+
+
+
+void * heartbit(void *args){
+    // int times = *((int*)(&args));
+    int time = ((th *)args)->time;
+    async_node* node = ((th *)args)->tree;
+    while(times>0){
+        queue <async_node*> q;
+        if (node != nullptr)
+            q.push(node);
+            act.resize(0);
+        
+            while (!q.empty())
+        {
+            async_node* ptr = q.front();
+            q.pop();
+            if (ptr->L != nullptr)
+                q.push(ptr->L);
+            if (ptr->R != nullptr)
+                q.push(ptr->R);
+            bool check = pings(ptr->id);
+            
+            act.push_back({ptr->id,check});
+        }
+        sleep(4*times/1000);  
+    }
+    return NULL;       
 }
 
 
-
-async_node* tree = nullptr;
 
 int main()
 {
@@ -241,6 +294,8 @@ int main()
     {
         string command;
         cin >> command;
+
+        
         if (command == "create")
         {
             int id;
@@ -249,7 +304,6 @@ int main()
             vec V;
             V.ex = CREATE;
             V.id = id;
-
             if (tree == nullptr)
             {
                 string id_str = to_string(id);
@@ -263,7 +317,7 @@ int main()
             {
                 async_node* node = find_node_create(tree, id);
                 if (node != nullptr){
-                    if (!ping(node->id))
+                    if (!pings(node->id))
                     {
                         cerr << "Error:" << id - MIN_PORT << ": Parent is unavailable\n";
                         continue;
@@ -289,7 +343,7 @@ int main()
             V.str = str;
             V.lensubstr = substr.length();
             V.substr = substr;
-            if (!ping(id))
+            if (!pings(id))
             {
                 cerr << "Error:" << id - MIN_PORT << ": Node is unavailable\n";
                 continue;
@@ -306,7 +360,7 @@ int main()
             int id;
             cin >> id;
             id += MIN_PORT;
-            if (!ping(id))
+            if (!pings(id))
             {
                 cerr << "Error:" << id - MIN_PORT << ": Node is unavailable\n";
                 continue;
@@ -316,6 +370,34 @@ int main()
                 cout << "Ok\n";
             else
                 cerr << "Error: Not found\n";
+        }
+
+
+        if (command == "heartbit"){
+            
+            cin >> times;
+            vector<pthread_t> threads = vector<pthread_t>(1);
+            th V;
+            V.time = times;
+            V.tree = tree;
+            if(flag){
+                if (times>0){
+                
+                    flag = false;
+                    if(int err = pthread_create(&threads[0],NULL, heartbit, (void *)&V))
+                    
+                    if (pthread_join(threads[0],NULL) != 0) {
+                        cout << "Can't wait for thread\n";
+                    }
+                }
+            }
+        }
+
+        if(command == "ping"){
+            int id;
+            cin >> id;
+            id += MIN_PORT;
+            ping(id);
         }
     }
 }
