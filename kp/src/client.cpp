@@ -7,7 +7,6 @@
 #include <cstring>
 #include <vector>
 #include "MappedFile.hpp"
-#include "CommonMutex.hpp"
 #include "Player_Game.hpp"
 #include <algorithm>
 #include <sys/stat.h>
@@ -16,20 +15,20 @@
 using namespace std;
 
 MappedFile mapped_file;
-CommonMutex mutex;
+pthread_mutex_t mutex;
 string nickname;
 string username, password;
 bool playing = false;
 string current_game = "";
 
 void SendMessage (const string &message) {
-    if (pthread_mutex_lock(mutex.ptr) != 0) {
+    if (pthread_mutex_lock(&mutex) != 0) {
         cout << "An error while locking mutex has been detected!" << '\n';
         exit(EXIT_FAILURE);
     }
     memset(mapped_file.data, '\0', _MAPPED_SIZE);
     sprintf(mapped_file.data, "%s", message.c_str());
-    pthread_mutex_unlock(mutex.ptr);
+    pthread_mutex_unlock(&mutex);
 }
 
 bool ReceiveAnswer() {
@@ -65,22 +64,24 @@ bool ReceiveAnswer() {
     }
     
     else if (server_commands[1] == nickname) {
-        if (pthread_mutex_lock(mutex.ptr) != 0) {
+        if (pthread_mutex_lock(&mutex) != 0) {
             perror("Error locking mutex\n");
             return -1;
         }
         memset(mapped_file.data, '\0', _MAPPED_SIZE);
-        pthread_mutex_unlock(mutex.ptr);
+        // pthread_mutex_unlock(mutex.ptr);
         if (server_commands[2] == "gamecreated") {
             playing = true;
             cout << "Created successfully!" << '\n';
             cout << "You are a player №1, cause you have created the game. Your field has been prepared!" << '\n';
+            pthread_mutex_unlock(&mutex);
             return true;
         }
         if (server_commands[2] == "connected") {
             cout << "Connected sucessfully" << '\n';
             cout << "You are a player №2, cause you have connected to the game. Your field has been prepared!" << '\n';
             playing = true;
+            pthread_mutex_unlock(&mutex);
             return true;
         }
         if (server_commands[2] == "checked") {
@@ -89,77 +90,98 @@ bool ReceiveAnswer() {
             current_game = server_commands[3];
             password = server_commands[4];
             playing = true;
+            pthread_mutex_unlock(&mutex);
+            return true;
+        }
+        if (server_commands[2] == "notchecked") {
+            cout << "Connected not sucessfully" << '\n';
+            pthread_mutex_unlock(&mutex);
             return true;
         }
         
         if (server_commands[2] == "notatgame") {
             playing = true;
-            cout << "You can't play without another player!" << '\n';;
+            cout << "You can't play without another player!" << '\n';
+            pthread_mutex_unlock(&mutex);
             return true;
         }
         if (server_commands[2] == "gamenotexists") {
             cout << "Game with this name not exists" << '\n';
             playing = false;
             current_game = "";
+            pthread_mutex_unlock(&mutex);
             return true;
         }
         if (server_commands[2] == "wrongpassword") {
             cout << "Wrong password has been detected!" << '\n';
             playing = false;
             current_game = "";
+            pthread_mutex_unlock(&mutex);
             return true;
         }
         if (server_commands[2] == "notyourturn") {
             cout << "It's not your turn now!" << '\n';
             playing = true;
+            pthread_mutex_unlock(&mutex);
             return true;
         }
         if (server_commands[2] == "youwounded") {
             playing = true;
             cout << "You have wounded enemy's ship! Please enter coordinates again!" << '\n';
+            pthread_mutex_unlock(&mutex);
             return true;
         }
         if (server_commands[2] == "youmissed") {
             playing = true;
             cout << "Unfortunately you have missed! Now it's your enemy's turn!" << '\n';
+            pthread_mutex_unlock(&mutex);
             return true;
         }
         if (server_commands[2] == "youkilled") {
             playing = true;
             cout << "Congrats, you have KILLED enemy's ship! Please enter coordinates again!" << '\n';
+            pthread_mutex_unlock(&mutex);
             return true;
         }
         if (server_commands[2] == "zeroplaces") {
             playing = false;
             cout << "Sorry, but you can not create a game or connect to existing game. There are not free places!" << '\n';
+            pthread_mutex_unlock(&mutex);
             return true;
         }
         if (server_commands[2] == "yourepeated") {
             playing = true;
             cout << "You have already entered these coordinates! Please enter something new." << '\n';
+            pthread_mutex_unlock(&mutex);
             return true;
         }
         if (server_commands[2] == "disconnected") {
             cout << "You have successfully disconnected from the server!" << '\n';
             playing = false;
+            pthread_mutex_unlock(&mutex);
             return true;
         }
         if (server_commands[2] == "youwon") {
             cout << "YOU WON THE GAME!" << '\n';
             playing = false;
+            pthread_mutex_unlock(&mutex);
             return true;
         }
         else {
             cout  << "Warning: unknown message has been detected!" << '\n';
             playing = false;
+            pthread_mutex_unlock(&mutex);
             return true;
         }
+        pthread_mutex_unlock(&mutex);
         return true;
+        
     }
     else if (server_commands[1] == username)
     {
         if(server_commands[2] == "invited"){
             cout << "Invited successfully!\n";
+            pthread_mutex_unlock(&mutex);
             return true;
         }
     }
@@ -186,7 +208,12 @@ int main() {
         perror("An error while shm_open has been detected!\n");
         return -1;
     }
-    mutex = shared_mutex_init(_MUTEX_NAME);
+    int er;
+    if (er = pthread_mutex_init(&mutex, NULL))
+    {
+        printf("Mutex init error: %d", er);
+        return -1;
+    }
     mapped_file.data = (char*)mmap(0, _MAPPED_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, mapped_file.fd, 0);
     if (mapped_file.data == MAP_FAILED) {
         perror("An error while mmaping has been detected!\n");
@@ -197,7 +224,6 @@ int main() {
     cout << "Hello, " << nickname << "!\n";
     Help();
     string command;
-    string on = "ON";
     string gamename;
     while (cout << "> " && cin >> command) {
         if (!playing && command == "create") {
@@ -307,6 +333,11 @@ int main() {
         else {
             cout << "Wrong input!" << '\n';
         }
+    }
+    if (er = pthread_mutex_destroy(&mutex))
+    {
+        printf("Mutex destroy error: %d", er);
+        return -1;
     }
     return 0;
 }

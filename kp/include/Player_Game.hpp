@@ -8,27 +8,16 @@
 
 using namespace std;
 
-string on = "ON";
-string to = "TO";
+
 class Player {
     public:
         string username;
         vector<vector<char>> field;
-        int wins;
-        int loses;
-        int kills;
-        int misses;
-        int wounds;
         bool turn;
         bool invite;
-        Player() : wins(0), loses(0), kills(0), misses(0), wounds(0), field(12,  vector<char> (12, '.')), username(""), turn(false), invite(false) {}
+        Player() : field(12,  vector<char> (12, '.')), username(""), turn(false), invite(false) {}
         void ErasePlayer() {
             username = "";
-            wins = 0;
-            loses = 0;
-            kills = 0;
-            misses = 0;
-            wounds = 0;
             turn = false;
             invite = false;
         } 

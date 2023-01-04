@@ -9,7 +9,6 @@
 #include <map>
 #include <vector>
 #include "MappedFile.hpp"
-#include "CommonMutex.hpp"
 #include "Player_Game.hpp"
 #include <fstream>
 
@@ -23,6 +22,7 @@ int main() {
     Game game;
     MappedFile mapped_file;
     string client_message = "";
+    int er;
     mapped_file.fd = shm_open(_BUFFER_NAME, O_RDWR | O_CREAT, _SHM_OPEN_MODE);
     if (mapped_file.fd == -1) {
         perror("sem_open error");
@@ -32,6 +32,7 @@ int main() {
         perror("ftruncate error");
         return -1;
     }
+
     mapped_file.data = (char *)mmap(NULL, _MAPPED_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, mapped_file.fd, 0);
     if (mapped_file.data == MAP_FAILED) {
         perror("mmap error");
@@ -39,12 +40,12 @@ int main() {
     }
     
     memset(mapped_file.data, '\0', _MAPPED_SIZE);
-    CommonMutex mutex = shared_mutex_init(_MUTEX_NAME);
-    if (mutex.created == 0) {
-        cout << "Mutex has been created!" << endl;
-    } 
-    else {
-        errno = 0;
+    pthread_mutex_t mutex;
+    
+    if (er = pthread_mutex_init(&mutex, NULL))
+    {
+        printf("Mutex init error: %d", er);
+        return -1;
     }
     cout << "Server is working now! Please start a game and it will be displayed here!" << endl;
     while (true) {
@@ -59,7 +60,7 @@ int main() {
             continue;
         }
         cout << "Locking mutex" << endl;
-        if (pthread_mutex_lock(mutex.ptr) != 0) {
+        if (pthread_mutex_lock(&mutex) != 0) {
             perror("Error locking mutex\n");
             return -1;
         }
@@ -164,6 +165,11 @@ int main() {
                 sprintf(mapped_file.data, "%s", player_message.c_str());
                 cout << "Sending to client next message: " << player_message << '\n';
             }
+            else{
+                string player_message = to + _MSG_SEP + client_commands[1] + _MSG_SEP + "notchecked" + _MSG_SEP + game.name + _MSG_SEP + game.password + _MSG_SEP;
+                sprintf(mapped_file.data, "%s", player_message.c_str());
+                cout << "Sending to client next message: " << player_message << '\n';
+            }
         }
         else if (client_commands[2] == "shoot") {
             if (!game.connected) {
@@ -186,16 +192,12 @@ int main() {
                         (creator.field[number + 1][int(letter) - int('A') + 1] == '.' || creator.field[number + 1][int(letter) - int('A') + 1] == 'm' || creator.field[number + 1][int(letter) - int('A') + 1] == 'w') &&
                         (creator.field[number + 1][int(letter) - int('A') + 2] == '.' || creator.field[number + 1][int(letter) - int('A') + 2] == 'm' || creator.field[number + 1][int(letter) - int('A') + 2] == 'w')) {
                             creator.field[number][int(letter) - int('A') + 1] = 'w';
-                            connector.wounds++;
-                            connector.kills++;
                             connector.turn = true;
                             creator.turn = false;
                             if (WonGame(creator.field)) {
                                 string player_message = to + _MSG_SEP + client_commands[1] + _MSG_SEP + "youwon" + _MSG_SEP;
                                 sprintf(mapped_file.data, "%s", player_message.c_str());
                                 cout << "Sending to connector next message:" << player_message << '\n';
-                                connector.wins++;
-                                creator.loses++;
                                 creator.ErasePlayer();
                                 connector.ErasePlayer();
                                 PrepareField(creator.field);
@@ -223,7 +225,6 @@ int main() {
                         (creator.field[number + 1][int(letter) - int('A') + 1] == '.' || creator.field[number + 1][int(letter) - int('A') + 1] == 'm' || creator.field[number + 1][int(letter) - int('A') + 1] == 'w') &&
                         (creator.field[number + 1][int(letter) - int('A') + 2] == '.' || creator.field[number + 1][int(letter) - int('A') + 2] == 'm' || creator.field[number + 1][int(letter) - int('A') + 2] == 'w')) {
                             creator.field[number][int(letter) - int('A') + 1] = 'w';
-                            connector.wounds++;
                             connector.turn = true;
                             creator.turn = false;
                             string player_message = to + _MSG_SEP + client_commands[1] + _MSG_SEP + "youwounded" + _MSG_SEP;
@@ -236,7 +237,6 @@ int main() {
                         (creator.field[number + 1][int(letter) - int('A') + 1] == '.' || creator.field[number + 1][int(letter) - int('A') + 1] == 'm' || creator.field[number + 1][int(letter) - int('A') + 1] == 'w') &&
                         (creator.field[number + 1][int(letter) - int('A') + 2] == '.' || creator.field[number + 1][int(letter) - int('A') + 2] == 'm' || creator.field[number + 1][int(letter) - int('A') + 2] == 'w')) {
                             creator.field[number][int(letter) - int('A') + 1] = 'w';
-                            connector.wounds++;
                             connector.turn = true;
                             creator.turn = false;
                             string player_message = to + _MSG_SEP + client_commands[1] + _MSG_SEP + "youwounded" + _MSG_SEP;
@@ -250,7 +250,6 @@ int main() {
                         creator.field[number + 1][int(letter) - int('A') + 1] == 'X' &&
                         (creator.field[number + 1][int(letter) - int('A') + 2] == '.' || creator.field[number + 1][int(letter) - int('A') + 2] == 'm' || creator.field[number + 1][int(letter) - int('A') + 2] == 'w')) {
                             creator.field[number][int(letter) - int('A') + 1] = 'w';    
-                            connector.wounds++;
                             connector.turn = true;
                             creator.turn = false;
                             string player_message = to + _MSG_SEP + client_commands[1] + _MSG_SEP + "youwounded" + _MSG_SEP;
@@ -259,7 +258,7 @@ int main() {
                         }
                         else if (creator.field[number][int(letter) - int('A') + 1] == 'X' && creator.field[number + 1][int(letter) - int('A') + 1] == 'X') {
                             creator.field[number][int(letter) - int('A') + 1] = 'w';    
-                            connector.wounds++;
+                            
                             connector.turn = true;
                             creator.turn = false;
                             string player_message = to + _MSG_SEP + client_commands[1] +_MSG_SEP + "youwounded" + _MSG_SEP;
@@ -267,7 +266,7 @@ int main() {
                             cout << "Sending to client next message: " << player_message << '\n';
                         }
                         else if (creator.field[number][int(letter) - int('A') + 1] == '.') {
-                            connector.misses++;
+                            
                             connector.turn = false;
                             creator.turn = true;
                             creator.field[number][int(letter) - int('A') + 1] = 'm';
@@ -294,7 +293,7 @@ int main() {
             else if (client_commands[1] == creator.username) {
                 if (creator.turn && !connector.turn) {
                     if (game.name == client_commands[3]) {
-                        int number = std::stoi(client_commands[5]);
+                        int number = stoi(client_commands[5]);
                         string l = client_commands[4];
                         char letter = l[0];
                         // wounded
@@ -305,16 +304,12 @@ int main() {
                         (connector.field[number + 1][int(letter) - int('A') + 1] == '.' || connector.field[number + 1][int(letter) - int('A') + 1] == 'm' || connector.field[number + 1][int(letter) - int('A') + 1] == 'w') &&
                         (connector.field[number + 1][int(letter) - int('A') + 2] == '.' || connector.field[number + 1][int(letter) - int('A') + 2] == 'm' || connector.field[number + 1][int(letter) - int('A') + 2] == 'w')) {
                             connector.field[number][int(letter) - int('A') + 1] = 'w';
-                            creator.kills++;
-                            creator.wounds++;
                             creator.turn = true;
                             connector.turn = false;
                             if (WonGame(connector.field)) {
                                 string player_message = to + _MSG_SEP + client_commands[1] + _MSG_SEP + "youwon" + _MSG_SEP;
                                 sprintf(mapped_file.data, "%s", player_message.c_str());
                                 cout << "Sending to creator next message: " << player_message << '\n';
-                                creator.wins++;
-                                connector.loses++;  
                                 creator.ErasePlayer();
                                 connector.ErasePlayer();
                                 PrepareField(creator.field);
@@ -341,7 +336,6 @@ int main() {
                         (connector.field[number + 1][int(letter) - int('A') + 1] == '.' || connector.field[number + 1][int(letter) - int('A') + 1] == 'm' || connector.field[number + 1][int(letter) - int('A') + 1] == 'w') &&
                         (connector.field[number + 1][int(letter) - int('A') + 2] == '.' || connector.field[number + 1][int(letter) - int('A') + 2] == 'm' || connector.field[number + 1][int(letter) - int('A') + 2] == 'w')) {
                             connector.field[number][int(letter) - int('A') + 1] = 'w';
-                            creator.wounds++;
                             creator.turn = true;
                             connector.turn = false;
                             string player_message = to + _MSG_SEP + client_commands[1] + _MSG_SEP + "youwounded" + _MSG_SEP;
@@ -354,7 +348,6 @@ int main() {
                         (connector.field[number + 1][int(letter) - int('A') + 1] == '.' || connector.field[number + 1][int(letter) - int('A') + 1] == 'm' || connector.field[number + 1][int(letter) - int('A') + 1] == 'w') &&
                         (connector.field[number + 1][int(letter) - int('A') + 2] == '.' || connector.field[number + 1][int(letter) - int('A') + 2] == 'm' || connector.field[number + 1][int(letter) - int('A') + 2] == 'w')) {
                             connector.field[number][int(letter) - int('A') + 1] = 'w';
-                            creator.wounds++;
                             creator.turn = true;
                             connector.turn = false;
                             string player_message = to + _MSG_SEP + client_commands[1] + _MSG_SEP + "youwounded" + _MSG_SEP;
@@ -368,7 +361,6 @@ int main() {
                         connector.field[number + 1][int(letter) - int('A') + 1] == 'X' &&
                         (connector.field[number + 1][int(letter) - int('A') + 2] == '.' || connector.field[number + 1][int(letter) - int('A') + 2] == 'm' || connector.field[number + 1][int(letter) - int('A') + 2] == 'w')) {
                             connector.field[number][int(letter) - int('A') + 1] = 'w';
-                            creator.wounds++;
                             creator.turn = true;
                             connector.turn = false;
                             string player_message = to + _MSG_SEP + client_commands[1] + _MSG_SEP + "youwounded" + _MSG_SEP;
@@ -376,8 +368,7 @@ int main() {
                             cout << "Sending to client next message: " << player_message << '\n';
                         }
                         else if (connector.field[number][int(letter) - int('A') + 1] == 'X' && connector.field[number + 1][int(letter) - int('A') + 1] == 'X') {
-                            connector.field[number][int(letter) - int('A') + 1] = 'w';    
-                            connector.wounds++;
+                            connector.field[number][int(letter) - int('A') + 1] = 'w';  
                             connector.turn = true;
                             creator.turn = false;
                             string player_message = to + _MSG_SEP + client_commands[1] +_MSG_SEP + "youwounded" + _MSG_SEP;
@@ -385,7 +376,6 @@ int main() {
                             cout << "Sending to client next message: " << player_message << '\n';
                         }
                         else if (connector.field[number][int(letter) - int('A') + 1] == '.') {
-                            creator.misses++;
                             creator.turn = false;
                             connector.turn = true;
                             connector.field[number][int(letter) - int('A') + 1] = 'm';
@@ -426,7 +416,7 @@ int main() {
             }
             player_message = player_message + _MSG_SEP;
             for (int i = 1; i < 11; ++i) {
-                player_message = player_message + to_string(i)  + " ";
+                player_message = player_message + to_string(i)  + "  ";
                 for (int j = 1; j < 11; ++j) {
                     player_message = player_message + field[i][j] + " ";
                 }
@@ -451,7 +441,7 @@ int main() {
                 }
                 player_message = player_message + _MSG_SEP;
                 for (int i = 1; i < 11; ++i) {
-                    player_message = player_message + to_string(i)  + " ";
+                    player_message = player_message + to_string(i)  + "  ";
                     for (int j = 1; j < 11; ++j) {
                         if(field[i][j] != 'X')
                             player_message = player_message + field[i][j] + " ";
@@ -473,7 +463,7 @@ int main() {
                 game.connected = false;
                 string player_message = to + _MSG_SEP + client_commands[1] + _MSG_SEP + "disconnected" + _MSG_SEP;
                 sprintf(mapped_file.data, "%s", player_message.c_str());
-                std::cout << "Sending to client next message: " << player_message << std::endl;
+                cout << "Sending to client next message: " << player_message << std::endl;
             }
             else {
                 creator.turn = true;
@@ -481,17 +471,23 @@ int main() {
                 game.connected = false;
                 string player_message = to + _MSG_SEP + connector.username + _MSG_SEP + "disconnected" + _MSG_SEP;
                 sprintf(mapped_file.data, "%s", player_message.c_str());
-                std::cout << "Sending to client next message: " << player_message << '\n';
+                cout << "Sending to client next message: " << player_message << '\n';
             }
         }
         
-        pthread_mutex_unlock(mutex.ptr);
+        pthread_mutex_unlock(&mutex);
         cout << "Unlocked mutex" << '\n';
+
+        
     }
-    if (shared_mutex_destroy(mutex) == -1) {
-        perror("An error while destroying mutex has been detected!\n");
+
+    if (er = pthread_mutex_destroy(&mutex))
+    {
+        printf("Mutex destroy error: %d", er);
         return -1;
     }
+
+
     if (shm_unlink(_BUFFER_NAME) == -1) {
         perror("An error while unlink mutex has been detected!\n");
         return -1;
